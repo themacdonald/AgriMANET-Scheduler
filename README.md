@@ -23,34 +23,53 @@ $$\text{Priority } (P) = \begin{cases}
 ### Transmission Strategy (Weighted Round Robin)
 To prevent network stalling while ensuring total Quality of Service (QoS) guarantees for highly critical payloads, the transmission cycle enforces a strict **$5:3:1$ dynamic execution ratio** across class queues ($Q_3, Q_2, Q_1$). 
 
-[ Heterogeneous Data Ingress ]
-│
-▼
-┌───────────────────────┐
-│ Data Type Parsing & │
-│ Class Assignment │
-└───────────┬───────────┘
-│
-┌────────┼────────┐
-▼ ▼ ▼
-[ P = 3 ] [ P = 2 ] [ P = 1 ] ◄── (Priority Buffering Layer)
-│ │ │
-▼ ▼ ▼
-┌────┐ ┌────┐ ┌────┐
-│ Q3 │ │ Q2 │ │ Q1 │ ◄── (Dedicated Class Queues)
-└─┬──┘ └─┬──┘ └─┬──┘
-│ │ │
-│(5x) │(3x) │(1x) ◄── (Token Allocation Ratios)
-└────────┼────────┘
-│
-▼
-┌───────────────────────┐
-│ Dynamic Packet │
-│ Selection Scheduler │
-└───────────┬───────────┘
-│
-▼
-[ Single Egress Wireless Channel ]
+```mermaid
+flowchart TD
+    %% Define Nodes
+    Ingress([Heterogeneous Data Ingress])
+    
+    Parsing[Data Type Parsing &<br>Class Assignment]
+    
+    subgraph Buffering [Priority Buffering Layer]
+        P3[P = 3]
+        P2[P = 2]
+        P1[P = 1]
+    end
+    
+    subgraph Queues [Dedicated Class Queues]
+        Q3[Q3]
+        Q2[Q2]
+        Q1[Q1]
+    end
+    
+    Scheduler[Dynamic Packet<br>Selection Scheduler]
+    
+    Egress([Single Egress Wireless Channel])
+
+    %% Define Connections & Ratios
+    Ingress --> Parsing
+    
+    Parsing --> P3
+    Parsing --> P2
+    Parsing --> P1
+    
+    P3 --> Q3
+    P2 --> Q2
+    P1 --> Q1
+    
+    Q3 -- "Token Ratio: 5x" --> Scheduler
+    Q2 -- "Token Ratio: 3x" --> Scheduler
+    Q1 -- "Token Ratio: 1x" --> Scheduler
+    
+    Scheduler --> Egress
+
+    %% Custom Styling
+    style Ingress fill:#1f6feb,stroke:#58a6ff,stroke-width:2px,color:#fff
+    style Egress fill:#1f6feb,stroke:#58a6ff,stroke-width:2px,color:#fff
+    style Parsing fill:#21262d,stroke:#30363d,stroke-width:1px
+    style Scheduler fill:#21262d,stroke:#30363d,stroke-width:1px
+```
+
 During a single scheduling round, the controller attempts to clear up to 5 packets from Q₃, 3 packets from Q₂, and 1 packet from Q₁. If a queue runs dry mid-cycle, tokens are immediately yielded back to the higher classes, optimizing overall link-state capacity dynamically.
 
 ---
